@@ -1,7 +1,7 @@
-grafana
-mongo-data
-mysql_keycloak_data
-postgres-inventory
-postgres-order
-prometheus
-realms
+grafana/
+mongo-data/
+mysql_keycloak_data/
+postgres-inventory/
+postgres-order/
+prometheus/
+realms/
