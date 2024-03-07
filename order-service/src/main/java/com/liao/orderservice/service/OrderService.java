@@ -4,12 +4,14 @@ import com.liao.orderservice.dto.InventoryResponse;
 import com.liao.orderservice.dto.OrderLineItemsDto;
 import com.liao.orderservice.dto.OrderRequest;
 import com.liao.orderservice.dto.OrderResponse;
+import com.liao.orderservice.event.OrderPlacedEvent;
 import com.liao.orderservice.model.Order;
 import com.liao.orderservice.model.OrderLineItems;
 import com.liao.orderservice.repository.OrderRepository;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,6 +28,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
     private final Tracer tracer;
+    private final KafkaTemplate<String,OrderPlacedEvent> kafkaTemplate;
     public String placeOrder(OrderRequest orderRequest){
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
@@ -51,6 +54,7 @@ public class OrderService {
             boolean allProductsInStock = Arrays.stream(inventoryResponseArray).allMatch(InventoryResponse::isInStock);
             if(allProductsInStock) {
                 orderRepository.save(order);
+                kafkaTemplate.send("notificationTopic",new OrderPlacedEvent(order.getOrderNumber()));
                 return "Order Placed Successfully";
             }
             else throw new IllegalArgumentException("Product is not in stock, try again later");
